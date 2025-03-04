@@ -1,0 +1,16 @@
+diff --git a/file.txt b/file.txt
+index 657517d..5472e31 100644
+--- a/file.txt
++++ b/file.txt
+@@ -18,9 +18,11 @@
+ 
+ 
+ 
++START
+ this
+ is
+ a
+ bunch
+ of
+ text
++END

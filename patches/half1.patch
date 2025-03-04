@@ -1,0 +1,12 @@
+diff --git a/file.txt b/file.txt
+index 5472e31..bad984e 100644
+--- a/file.txt
++++ b/file.txt
+@@ -18,7 +18,6 @@
+ 
+ 
+ 
+-START
+ this
+ is
+ a
