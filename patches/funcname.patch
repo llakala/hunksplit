@@ -1,0 +1,20 @@
+diff --git a/setup.py b/setup.py
+index d16c833..b604f1d 100644
+--- a/setup.py
++++ b/setup.py
+@@ -35,10 +35,10 @@ def main():
+         ext_modules=[
+             Extension(
+                 "ckzg",
+-                sources=["bindings/python/ckzg_wrap.c", "src/ckzg.c"],
++                sources=["bindings/python/ckzg_wrap.c"],
+                 include_dirs=["inc", "src"],
+                 library_dirs=["lib"],
+-                libraries=["blst"]
++                libraries=["rust_kzg_mcl", "stdc++"]
+             )
+         ],
+         cmdclass={
+-- 
+2.46.1
+

@@ -1,78 +1,64 @@
-# Split a full file into the header section and the rest. Mainly just QOL for
-# the other functions, so they can do stuff based on only one of these without
-# manually splitting. This will probably break on some hunks, but this whole
-# file is just temporary for me to figure out logic before upstreaming to
-# splitpatch
-def splitHeader(rawFile):
-    header = []
-    contents = []
-    lines = rawFile.splitlines()
-    in_header = True
-
-    for line in lines:
-        if in_header:
-            header.append(line)
-        else:
-            contents.append(line)
-
-        if line.startswith("@@ "):
-            in_header = False
-
-    return (header, contents)
+import re
 
 
-# Take a line like `@@ -18,9 +20,11 @@` and extract the relevant values
-def extractHunkValues(hunk_line):
-    hunk_line = hunk_line[3:-3]  # Take off the @@ stuff
-    halves = hunk_line.split(" ")  # ["-18,9", "+20,11"]
-    if len(halves) != 2:
-        print("Uh oh... there were more spaces than I thought possible")
+class Hunk:
+    old_start = None
+    old_len = None
 
-    old_values = halves[0].split(",")  # ["-18", "9"]
-    new_values = halves[1].split(",")  # ["+20", "11"]
+    new_start = None
+    new_len = None
 
-    old_start = int(old_values[0].strip("-"))  # 18
-    old_len = int(old_values[1])  # 9
+    header = None
+    contents = None
 
-    new_start = int(new_values[0].strip("+"))  # 20
-    new_len = int(new_values[1])  # 11
+    # Given a hunk's header and its contents, create a Hunk object.
+    def __init__(self, header: list[str], contents: list[str]):
+        # TODO: differentiate between junk header and real header?
+        self.header = header
+        self.contents = contents
 
-    # Tuples are inherently arbitary, but we return in the order seen in the
-    # actual string.
-    return (old_start, old_len, new_start, new_len)
+        # The header has multiple lines, but only the last one will give us the
+        # info we need
+        header_line = header[-1]
 
+        regex = re.match(r"^@@ -(\d+),(\d+) \+(\d+),(\d+) @@", header_line)
 
-# Based on the contents, find the old/new lengths of the hunk,
-# for use in the header.
-def lengths(contents):
-    added_lines = 0
-    deleted_lines = 0
-    unchanged_lines = 0
+        if regex is None:
+            raise Exception("Failed to parse header line!")
 
-    for line in contents:
-        # Debug
-        # print(f"Line {i}: {line}")
-        match line[0]:
-            case "+":
-                added_lines += 1
-            case "-":
-                deleted_lines += 1
-            case " ":
-                unchanged_lines += 1
-            case _:
-                print("Well, this is crazy. ERROR! ERROR!")
+        self.old_start = regex.group(1)
+        self.old_len = regex.group(2)
+        self.new_start = regex.group(3)
+        self.new_len = regex.group(4)
 
-    # DEBUG
-    print(f"added lines: {added_lines}")
-    print(f"deleted lines: {deleted_lines}")
-    print(f"unchanged lines: {unchanged_lines}")
+    def can_be_split(self) -> bool:
+        started = False
+        ended = False
 
-    # To reach the old length, just bring back deleted lines
-    oldLength = unchanged_lines + deleted_lines
+        for line in self.contents:
+            kind = line[0]
+            is_change = kind == "+" or kind == "-"
 
-    # To reach the new length, take what wasn't changed, and add new stuff
-    # Yes, these comments seem obvious. But it took a moment for me to
-    # realize this was how things worked!
-    newLength = unchanged_lines + added_lines
+            # We started with some + or - lines, constituting something that
+            # could be a hunk. Then, we had a break, with some unchanged lines.
+            # And, now, we see another change! This hunk can be split.
+            if started and ended and is_change:
+                return True
 
-    return (oldLength, newLength)
+            # We're currently in a section, and just got to an unchanged line,
+            # so the section is over!
+            elif started and kind == " ":
+                ended = True
+
+            # We haven't started a section yet, but we just saw a line change!
+            # The section begins.
+            elif not started and is_change:
+                started = True
+
+        return False
+
+    def __str__(self):
+        return (
+            f"start: L{self.old_start} -> L{self.new_start}\n"
+            + f"len: {self.old_len} -> {self.new_len}"
+        )

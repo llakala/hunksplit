@@ -1,9 +1,0 @@
-diff --git a/file.txt b/file.txt
-index bad984e..657517d 100644
---- a/file.txt
-+++ b/file.txt
-@@ -24,4 +24,3 @@ a
- bunch
- of
- text
--END

@@ -1,30 +1,41 @@
+import os
+
 import hunk
-
-filename = "test.patch"
-with open(filename, "r") as f:
-    contents = f.read()
+import util
 
 
-header, contents = hunk.splitHeader(contents)
+def split_hunk(filename):
+    with open(filename, "r") as f:
+        contents = f.read()
 
-# splitHeader returns a list, because that's easiest for it.
-# you can turn it to a string manually for printing
-joined_header = "\n".join(header)
-joined_contents = "\n".join(contents)
+    # Exit early if the hunk is invalid
+    if not util.is_valid_hunk(contents):
+        print("This doesn't contain an actual hunk, it's weird!")
+        return None
 
-# The length of the hunk, prefixed with `gen` because these were generated
-# from the file contents
-gen_old_len, gen_new_len = hunk.lengths(contents)
-print(f"Generated old len: {gen_old_len}")
-print(f"Generated new len: {gen_new_len}")
+    header_lines, contents = util.split_header(contents)
 
-# Example - ideally this would be found from the header automatically
-hunkLine = "@@ -18,9 +18,11 @@"
+    hnk = hunk.Hunk(header_lines, contents)
 
-old_start, old_len, new_start, new_len = hunk.extractHunkValues(hunkLine)
+    if not hnk.can_be_split():
+        print("Hunk doesn't need to be split")
+        return None
 
-print(f"Old len: {old_len}")
-print(f"New len: {new_len}")
+    print(hnk)
 
-print(f"Old start: {old_start}")
-print(f"New start: {new_start}")
+    # The length of the hunk, prefixed with `gen` because these were generated
+    # from the file contents
+    # gen_old_len, gen_new_len = util.lengths(contents)
+    # print(f"Generated old len: {gen_old_len}")
+    # print(f"Generated new len: {gen_new_len}")
+
+
+if __name__ == "__main__":
+    files = os.listdir("./patches")
+
+    for filename in files:
+        print(f"Parsing {filename}")
+        filename = "./patches/" + filename
+
+        split_hunk(filename)
+        print()
