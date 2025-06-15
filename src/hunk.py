@@ -8,8 +8,8 @@ class Hunk:
     new_start = None
     new_len = None
 
-    header = None
-    contents = None
+    header = []
+    contents = []
 
     # Given a hunk's header and its contents, create a Hunk object.
     def __init__(self, header: list[str], contents: list[str]):
